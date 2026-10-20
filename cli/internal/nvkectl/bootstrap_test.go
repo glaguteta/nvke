@@ -20,6 +20,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	goruntime "runtime"
 	"slices"
 	"strings"
 	"sync"
@@ -2247,6 +2248,25 @@ func TestCapnicoReleaseImage(t *testing.T) {
 				t.Fatalf("capnicoReleaseImage = %q, %v; want %q", got, err, tt.want)
 			}
 		})
+	}
+}
+
+// TestCapnicoReleaseImage_DefaultsToTheHostArchitecture: an empty architecture,
+// the flag's default, picks the artifact for the machine the bootstrap runs on.
+func TestCapnicoReleaseImage_DefaultsToTheHostArchitecture(t *testing.T) {
+	const release = "../../../deploy/testdata/nvkr-release/valid.json"
+	nico := &sitespec.SiteSpec{Infra: sitespec.Infra{Provider: sitespec.ProviderNico}}
+
+	got, err := capnicoReleaseImage(nico, release, "")
+	if err != nil {
+		t.Fatalf("capnicoReleaseImage with no architecture: %v", err)
+	}
+	want, err := capnicoReleaseImage(nico, release, "linux/"+goruntime.GOARCH)
+	if err != nil {
+		t.Fatalf("capnicoReleaseImage for the host architecture: %v", err)
+	}
+	if got != want {
+		t.Fatalf("an empty architecture gave %q, want the host's %q", got, want)
 	}
 }
 
